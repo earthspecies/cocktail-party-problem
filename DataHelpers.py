@@ -94,7 +94,7 @@ class LoadMacaqueData(object):
 		win_width = mean_dur + 3*std_dur
 
 		X = []
-		for i, wf in tqdm.tqdm(enumerate(data_df.Waveform.values), total=len(data_df)):
+		for i, wf in enumerate(data_df.Waveform.values):
 			X.append(wf.astype('float32'))
 		Y = data_df.Category.values.astype('int64').tolist()
 		return X, Y
@@ -191,7 +191,7 @@ class LoadDolphinData(object):
 		return match
 
 class LoadBatData(object):
-	def __init__(self, os='Ubuntu', sr=250000, frames=250000):
+	def __init__(self, os='Ubuntu', sr=250000, frames=200000):
 		self.os = os
 		if os=='Windows':
 			self.pattern = r'\\'
@@ -246,7 +246,7 @@ class LoadBatData(object):
 		df = df.reset_index(drop=True)
 		return df
 	
-	def run(self, balance=False, chunk='segment'):
+	def run(self, balance=True, chunk='random', start_offset_from_end=1.5):
 		df = self.generate_df(balance=balance)
 		
 		id_dict = {e:i for i, e in enumerate(np.unique(df.Emitter.values))}
@@ -261,7 +261,7 @@ class LoadBatData(object):
 				end_sample = df['End sample'].iloc[i]
 				start_sample = df['Start sample'].iloc[i]
 				start_offset = random.randint(start_sample, 
-											  max(start_sample + 1, end_sample - self.frames))
+											  max(start_sample + 1, end_sample - start_offset_from_end*self.frames))
 				x, _ = librosa.load(path, 
 									offset=start_offset/self.sr, 
 									duration=self.frames/self.sr, 
