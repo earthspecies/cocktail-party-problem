@@ -13,7 +13,7 @@ import random
 import tqdm
 
 class LoadMacaqueData(object):    
-	def __init__(self, url='https://storage.googleapis.com/ml-animal-sounds-datasets/macaques_24414Hz.zip', sr=24414, os='Windows', state=0):
+	def __init__(self, url='https://storage.googleapis.com/ml-animal-sounds-datasets/macaques_24414Hz.zip', sr=24414, os='Ubuntu', state=0):
 		self.url = url
 		self.os = os
 		self.state = state
@@ -93,10 +93,10 @@ class LoadMacaqueData(object):
 
 		win_width = mean_dur + 3*std_dur
 
-		X = np.zeros((len(data_df), win_width), dtype=np.float32)
-		for i, wf in enumerate(data_df.Waveform.values):
-			X[i, :] = wf
-		Y = data_df.Category.values
+		X = []
+		for i, wf in tqdm.tqdm(enumerate(data_df.Waveform.values), total=len(data_df)):
+			X.append(wf.astype('float32'))
+		Y = data_df.Category.values.astype('int64').tolist()
 		return X, Y
 	
 	@staticmethod
@@ -118,7 +118,7 @@ class LoadMacaqueData(object):
 		return std_dur
 
 class LoadDolphinData(object):
-	def __init__(self, os='Windows', sr=96000, n_individuals=None, frames_fx=np.max):
+	def __init__(self, os='Ubuntu', sr=96000, n_individuals=None, frames_fx=np.max):
 		self.os = os
 		if os == 'Windows':
 			self.data_path = 'BioacousticData\\Dolphin'
@@ -168,14 +168,12 @@ class LoadDolphinData(object):
 	def run(self):
 		path_df = self.generate_df()
 		frames = int(self.frames_fx(path_df['Duration (s)'].values)*self.sr)
-		X = np.zeros((len(path_df), frames), dtype='float32')
-		Y = np.zeros(len(path_df), dtype='int32')
 
+		X, Y = [], []
 		for i in range(len(path_df)):
 			wav, _ = librosa.load(path_df['Wav Path'].iloc[i], sr=self.sr)
-			wav = librosa.util.fix_length(wav, frames)
-			X[i] = wav
-			Y[i] = path_df['Class ID'].iloc[i]
+			X.append(wav.astype('float32'))
+			Y.append(path_df['Class ID'].iloc[i])
 		return X, Y
 	
 	def get_ids(self, files):
@@ -248,15 +246,13 @@ class LoadBatData(object):
 		df = df.reset_index(drop=True)
 		return df
 	
-	def run(self, balance=False, chunk='random', start_offset_from_end_factor=1.5):
+	def run(self, balance=False, chunk='segment'):
 		df = self.generate_df(balance=balance)
 		
 		id_dict = {e:i for i, e in enumerate(np.unique(df.Emitter.values))}
-		
+		X, Y = []
+
 		if chunk == 'random':
-			X = np.zeros((len(df), self.frames), dtype='float32')
-			Y = np.zeros(len(df), dtype='int32')
-			
 			for i in tqdm.tqdm(range(len(df))):
 				folder = df['File folder'].iloc[i]
 				fname = df['File name'].iloc[i]
@@ -265,24 +261,16 @@ class LoadBatData(object):
 				end_sample = df['End sample'].iloc[i]
 				start_sample = df['Start sample'].iloc[i]
 				start_offset = random.randint(start_sample, 
-											  max(start_sample + 1, end_sample - (start_offset_from_end_factor*self.frames)))
+											  max(start_sample + 1, end_sample - self.frames))
 				x, _ = librosa.load(path, 
 									offset=start_offset/self.sr, 
 									duration=self.frames/self.sr, 
 									sr=None)
-				try:            
-					X[i] = x
-				except ValueError:
-					x = librosa.util.fix_length(x, self.frames)
-					X[i] = x
-				Y[i] = id_dict[df['Emitter'].iloc[i]]
-            
-		elif chunk == 'segment':   
-			total_segments = self.count_segments(df, self.frames)
-			X = np.zeros((total_segments, self.frames), dtype='float32')
-			Y = np.zeros(total_segments, dtype='int64')
+				x = librosa.util.fix_length(x, self.frames).astype('float32')
+				X.append(x)
+				Y.append(id_dict[df['Emitter'].iloc[i]])
 		
-			index = 0
+		elif chunk == 'segment':
 			for i in tqdm.tqdm(range(len(df))):
 
 				sample_start = df['Start sample'].iloc[i]
@@ -296,47 +284,21 @@ class LoadBatData(object):
 				path = self.base_path
 				path += f'{folder}{self.pattern}{fname}'
 
-				counter = 0
 				while end_frame < sample_end:
-					#start_offset = sample_start + counter * self.frames
-					#print('     ', start_frame, start_offset)
+
 					x, _ = librosa.load(path, 
 										offset=start_frame/self.sr, 
 										duration=self.frames/self.sr, 
 										sr=None)
-					try:            
-						X[index] = x
-					except ValueError:
-						x = librosa.util.fix_length(x, self.frames)
-						X[index] = x
+					x = librosa.util.fix_length(x, self.frames).astype('float32')
 					
-					Y[index] = id_dict[df['Emitter'].iloc[i]]
+					X.append(x)
+					Y.append(id_dict[df['Emitter'].iloc[i]])
 
-					index += 1
-					counter += 1
 					start_frame += self.frames
 					end_frame += self.frames
+
 		return X, Y
-		
-	@staticmethod
-	def count_segments(df, fixed_frames):
-		
-		count = 0
-		for i in range(len(df)):
-			sample_start = df['Start sample'].iloc[i]
-			sample_end = df['End sample'].iloc[i]
-			
-			start_frame = sample_start
-			end_frame = start_frame + fixed_frames
-			
-			i_count = 0
-			while end_frame < sample_end:
-				i_count += 1
-				start_frame += fixed_frames
-				end_frame += fixed_frames      
-			count += i_count
-			
-		return count
     
 class LoadSpermWhaleData(object):
 	def __init__(self, os='Ubuntu', frames=264000, count_threshold=300):
@@ -361,14 +323,11 @@ class LoadSpermWhaleData(object):
 	def run(self, balance=False):
 		df = self.generate_df(balance=balance)
 		id_dict = {ID: i for i, ID in enumerate(np.unique(df.IDN.values))}
-		
-		X = np.zeros((len(df), self.frames), dtype='float32')
-		Y = np.zeros((len(df)), dtype='int32')
-		
+
+		X, Y = []
 		for i in range(len(df)):
-			X[i] = self.read_coda(df.iloc[i])
-			Y[i] = id_dict[df.IDN.iloc[i]]
-		
+			X.append(self.read_coda(df.iloc[i]).astype('float32'))
+			Y.append(id_dict[df.IDN.iloc[i]])
 		return X, Y
 		
 	def read_coda(self, row):
@@ -388,28 +347,6 @@ class LoadElephantData(object):
 
 		self.data_path = f'BioacousticData{self.pattern}Elephant{self.pattern}'
 	
-	def count_segments(self):
-		audio_path = self.data_path + f'audio{self.pattern}'
-		anno_path = self.data_path + 'annotations.csv'
-
-		df = pd.read_csv(anno_path)
-		df = df.drop(df[(df.Callers == 'Emma') | (df.Callers == 'Erin') | (df.Callers == 'Eudora') | (df.Callers == 'Enid')].index)
-		
-		total_segments = 0
-		for i, name in enumerate(df['Callers'].unique()):
-			id_df = df[df['Callers'] == name]
-			for j, row in id_df.iterrows():
-				file = row.SndFile
-				file_name = audio_path + f'{file}.wav'
-				
-				info = sf.info(file_name)
-				end_time = info.duration
-				segments = int(end_time * self.sr) // self.frames
-				if segments == 0:
-					segments = 1
-				total_segments += segments
-		return total_segments
-	
 	def run(self):
 		audio_path = self.data_path + f'audio{self.pattern}'
 		anno_path = self.data_path + 'annotations.csv'
@@ -417,11 +354,7 @@ class LoadElephantData(object):
 		df = pd.read_csv(anno_path)
 		df = df.drop(df[(df.Callers == 'Emma') | (df.Callers == 'Erin') | (df.Callers == 'Eudora') | (df.Callers == 'Enid')].index)
 		
-		segments = self.count_segments()
-		X = np.zeros((segments, self.frames), dtype='float32')
-		Y = np.ones(segments, dtype='int64')*999
-		
-		counter = 0
+		X, Y = [], []
 		for i, name in enumerate(df['Callers'].unique()):
 			id_df = df[df['Callers'] == name]
 			for j, row in id_df.iterrows():
@@ -441,11 +374,7 @@ class LoadElephantData(object):
 										duration=self.frames/self.sr, 
 										sr=self.sr)
 					start_time += self.frames/self.sr
-					try:
-						X[counter] = x
-					except:
-						x = librosa.util.fix_length(x, self.frames)
-						X[counter] = x
-					Y[counter] = i
-					counter += 1
+					x = librosa.util.fix_length(x, self.frames).astype('float32')
+					X.append(x)
+					Y.append(i)
 		return X, Y
