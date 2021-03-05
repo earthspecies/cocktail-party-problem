@@ -56,7 +56,7 @@ def pit_wrapper_metric(metric_fn):
 		return perm_metric
 	return permutation_metric
 
-def augmenter(X, Y, augmentation_factor, shift_factor, pad='zero', side='front'):
+def augmenter(X, Y, augmentation_factor, shift_factor, pad='zero', side='front', shuffle=True):
 	assert type(augmentation_factor)==int, print('Augmentation factor must be an integer')
 	if type(pad)==str:
 		assert pad in ['zero', 'noise', 'sub_noise'], print('Pad must be \'zero\', \'noise\', \'sub_noise\' or a float')
@@ -64,11 +64,10 @@ def augmenter(X, Y, augmentation_factor, shift_factor, pad='zero', side='front')
 		assert type(pad) == float, print('Pad must be \'zero\', \'noise\', \'sub_noise\' or a float')
 	assert side in ['front', 'back']
     
-	frames = X.shape[-1]
-	samples = X.shape[0]
+	frames = X[0].shape[-1]
+	samples = len(X)
     
-	X_aug = np.zeros((samples * augmentation_factor, frames), dtype='float32')
-	Y_aug = np.zeros((samples * augmentation_factor), dtype='int64')
+	X_aug, Y_aug = [], []
     
 	for i in range(samples):
 		x_i = X[i]
@@ -94,11 +93,15 @@ def augmenter(X, Y, augmentation_factor, shift_factor, pad='zero', side='front')
             
 			x_j = np.concatenate([noise_j, x_j]).astype('float32')
             
-			X_aug[augmentation_factor*i + j] = x_j
-			Y_aug[augmentation_factor*i + j] = y_i
+			X_aug.append(x_j)
+			Y_aug.append(y_i)
 	X, Y = None, None
 	del X
 	del Y
+	if shuffle:
+		data = list(zip(X_aug, Y_aug))
+		random.shuffle(data)
+		X_aug, Y_aug = zip(*data) 
 	return X_aug, Y_aug
 
 def nll_loss_weights(Y):
