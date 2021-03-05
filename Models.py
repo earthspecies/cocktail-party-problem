@@ -120,7 +120,7 @@ class Classifier(nn.Module):
 		return int(result)
 
 class UNet2D(nn.Module):
-	def __init__(self, in_size, n_src, n_blocks, batch_norm=False):
+	def __init__(self, in_size, n_src, n_blocks, pool_size=2, batch_norm=False):
 		super(UNet2D, self).__init__()
 		self.n_src = n_src
 		self.n_blocks = n_blocks
@@ -128,13 +128,13 @@ class UNet2D(nn.Module):
 		self.batch_norm = batch_norm
 		
 		self.padding2d = Padding2D(in_size=in_size,
-								   x_factor=2**n_blocks,
-								   y_factor=2**n_blocks)
+								   x_factor=pool_size**n_blocks,
+								   y_factor=pool_size**n_blocks)
 	   
 		self.downs = nn.ModuleList([self.conv_block(1, 2**(i+4), batch_norm=batch_norm) if i==0 
 									else self.conv_block(2**(i+3), 2**(i+4), batch_norm=batch_norm) 
 									for i in range(n_blocks)])
-		self.maxpool = nn.MaxPool2d(kernel_size=(2,2))
+		self.maxpool = nn.MaxPool2d(kernel_size=(pool_size,pool_size))
 
 		middle1 = [
 			nn.Conv2d(in_channels=2**(4+(n_blocks-1)), 
@@ -160,7 +160,7 @@ class UNet2D(nn.Module):
 		
 		self.ups = nn.ModuleList([self.conv_block(*filters, batch_norm=batch_norm)
 								  for filters in self.compute_upfilters(n_blocks)])
-		self.upsample = nn.Upsample(scale_factor=2,
+		self.upsample = nn.Upsample(scale_factor=pool_size,
 									mode='bilinear',
 									align_corners=True)
 		
@@ -238,7 +238,7 @@ class RepUNet(nn.Module):
 		
 		try:
 			filter_params = kwargs['filter_params']
-			self.filter = HighPassFilter(**filter_params)#filter_params['cutoff_freq'], filter_params['sample_rate'], b=filter_params['b'])
+			self.filter = HighPassFilter(**filter_params)
 		except KeyError:
 			self.filter = lambda x: x
 			
@@ -267,6 +267,7 @@ class RepUNet(nn.Module):
 		self.unet2d = UNet2D(in_size=start_size,
 							 n_src=n_src,
 							 n_blocks=kwargs['n_blocks'],
+							 pool_size=kwargs['pool_size'],
 							 batch_norm=kwargs['batch_norm'])
 		self.phase_channel = phase_channel
 		if self.phase_channel:
@@ -274,6 +275,7 @@ class RepUNet(nn.Module):
 			self.unet2dphase = UNet2D(in_size=start_size,
 									  n_src=n_src,
 									  n_blocks=kwargs['n_blocks'],
+									  pool_size=kwargs['pool_size'],
 									  batch_norm=kwargs['batch_norm'])
 		
 		if output_mode == 'conv1d':
