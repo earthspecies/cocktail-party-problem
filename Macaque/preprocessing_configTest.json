@@ -1,0 +1,18 @@
+{
+    "data_preprocessing": {
+         "general": {
+             "balance":false,
+             "n_individuals":null,
+             "n_open":null
+         },
+         "classifier": {
+            "augmentation_factor":2,
+            "shift_factor":0.5,
+            "padding_scheme":"zero",
+            "padding_side":"front"
+        },
+        "separator": {
+            "mixing_to_memory": null
+        }    
+    }
+}
