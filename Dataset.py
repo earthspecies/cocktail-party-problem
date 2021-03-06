@@ -102,9 +102,9 @@ class SeparatorDataset(torch.utils.data.Dataset):
 	
 	def __getitem__(self, idx):
 		return self.X[idx], self.transforms(self.Y[idx]), self.Y_id[idx]
-    
+	
 class MixtureDataset(torch.utils.data.Dataset):
-	def __init__(self, X, Y, size=None, n_src=2, subset='train', seed=42):
+	def __init__(self, X, Y, size=None, n_src=2, subset='train', shift_factor=0.1, shift_overlaps=True, pad='zero', side='front', seed=42):
 		self.Y = Y
 		self.categories = torch.unique(Y).tolist()
 		self.X_cat = {c:X[self.Y == c] for c in self.categories}
@@ -113,9 +113,18 @@ class MixtureDataset(torch.utils.data.Dataset):
 			self.size = X.size(0) // n_src
 		else:
 			self.size = size
-            
+
 		self.n_src = n_src
 		self.subset = subset
+		
+		if shift_factor is not None:
+			self.overlapper = lambda s: mix_overlaps(s, 
+													 shift_factor=shift_factor, 
+													 shift_overlaps=shift_overlaps, 
+													 pad=pad, 
+													 side=side)
+		else:
+			self.overlapper = lambda s: s
 		self.seed = seed
 		random.seed(self.seed)
 
@@ -129,6 +138,7 @@ class MixtureDataset(torch.utils.data.Dataset):
 		ids = random.sample(self.categories, self.n_src)
 
 		Xs = [random.choice(self.X_cat[i]) for i in ids]
+		Xs = self.overlapper(Xs)
 
 		Ys = [torch.LongTensor([i]) for i in ids]
 
@@ -137,3 +147,63 @@ class MixtureDataset(torch.utils.data.Dataset):
 		Y_mix_id = torch.vstack(Ys).squeeze(dim=-1)
 
 		return X_mix, Y_mix, Y_mix_id
+	
+	@staticmethod
+	def signal_shifter(signal, shift_factor, pad='zero', side='front'):
+		if type(pad)==str:
+			assert pad in ['zero', 'noise', 'sub_noise'], print('Pad must be \'zero\', \'noise\', \'sub_noise\' or a float')
+		else:
+			assert type(pad) == float, print('Pad must be \'zero\', \'noise\', \'sub_noise\' or a float')
+		assert side in ['front', 'back']
+
+		frames = signal.shape[-1]
+
+		if pad == 'zero':
+			noise = 0
+		elif pad == 'noise':
+			noise = signal[-1]
+		elif pad == 'sub_noise':
+			noise = signal
+			signal = signal - noise
+			noise = 0
+		else:
+			noise = pad
+
+		frame_shift = random.randint(0, int(shift_factor * frames))
+		noise_frames = torch.ones(frame_shift) * noise
+
+		if side == 'front':
+			signal_frames = signal[0:frames - frame_shift]
+		elif side == 'back':
+			signal_frames = signal[frame_shift-1:-1]
+
+		signal = torch.cat([noise_frames, signal_frames], dim=-1)
+
+		return signal
+	
+	@staticmethod
+	def mix_overlaps(signals, shift_factor=0.1, shift_overlaps=True, pad='zero', side='front'):
+		frames = signals[0].shape[-1]
+		if shift_overlaps:
+
+			trimmed_signals = [s[torch.nonzero(s)].squeeze() for s in signals]
+			trimmed_lengths = [len(t) for t in trimmed_signals]
+
+			max_length = max(trimmed_lengths)
+			max_index = trimmed_lengths.index(max_length)
+
+			for i, e in enumerate(trimmed_signals):
+				if i != max_index:
+					frame_shift = min(random.randint(0, max_length), frames-trimmed_lengths[i])
+					shift = torch.zeros(frame_shift)
+					signals[i] = torch.cat([shift, trimmed_signals[i]])
+				else:
+					signals[i] = trimmed_signals[i]
+
+			max_length = max([len(s) for s in signals])
+			front_zeros = torch.zeros(random.randint(0, min(int(shift_factor * frames), frames-max_length)))
+			signals = [torch.cat([front_zeros, s], dim=-1) for s in signals]
+			signals = [torch.cat([s, torch.zeros(frames - len(s))], dim=-1) for s in signals]
+		else:
+			signals = [signal_shifter(s, shift_factor, pad=pad, side=side) for s in signals]
+		return signals
