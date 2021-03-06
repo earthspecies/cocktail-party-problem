@@ -62,15 +62,10 @@ if __name__ == '__main__':
 	global separator_model_config
 	separator_model_config = config['separator_model_params']
 
-	X_train = torch.load(root+f'{args.data}/Separator{args.regime}/X_train.pt')
-	Y_train = torch.load(root+f'{args.data}/Separator{args.regime}/Y_train.pt')
-	Y_train_id = torch.load(root+f'{args.data}/Separator{args.regime}/Y_train_id.pt')
+	global separator_preprocessing
+	separator_preprocessing = config['data_preprocessing']['separator']
 
-	X_test = torch.load(root+f'{args.data}/Separator{args.regime}/X_test.pt')
-	Y_test = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test.pt')
-	Y_test_id = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test_id.pt')
-
-	nll_weights = torch.Tensor(nll_loss_weights(torch.cat([Y_train, Y_test], dim=0).numpy()))
+	nll_weights = torch.empty()#torch.Tensor(nll_loss_weights(torch.cat([Y_train, Y_test], dim=0).numpy()))
 
 	nfft = classifier_model_config['stft_params']['kernel_size']
 	hop = classifier_model_config['stft_params']['stride']
@@ -116,14 +111,65 @@ if __name__ == '__main__':
 	classifier.load_state_dict(torch.load(classifier_path))
 	classifier.eval()
 
-	separator_dataset_train = PipelineDataset(X_train, 
-											  Y_train, 
-											  Y_train_id, 
-											  **separator_dataset_config)
-	separator_dataset_test = PipelineDataset(X_test, 
-											 Y_test, 
-											 Y_test_id, 
-											 **separator_dataset_config)
+	if separator_preprocessing['mixing_to_memory'] is not None:
+		X_train = torch.load(root+f'{args.data}/Separator{args.regime}/X_train.pt')
+		Y_train = torch.load(root+f'{args.data}/Separator{args.regime}/Y_train.pt')
+		Y_train_id = torch.load(root+f'{args.data}/Separator{args.regime}/Y_train_id.pt')
+
+		X_test = torch.load(root+f'{args.data}/Separator{args.regime}/X_test.pt')
+		Y_test = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test.pt')
+		Y_test_id = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test_id.pt')
+
+		Y_train_id = id_mapper(Y_train_id.view(-1)).view(Y_train_id.size())
+		Y_test_id = id_mapper(Y_test_id.view(-1)).view(Y_test_id.size())
+
+		separator_dataset_train = PipelineDataset(X_train, 
+												  Y_train, 
+												  Y_train_id, 
+												  **separator_dataset_config)
+		separator_dataset_test = PipelineDataset(X_test, 
+												 Y_test, 
+												 Y_test_id, 
+												 **separator_dataset_config)
+	else:
+
+		assert separator_preprocessing['mixing_from_disk'] is not None, print('Unknown error in the separator preprocessing config')
+		mixing_config = separator_preprocessing['mixing_from_disk']
+
+		X_train = torch.load(root+f'{args.data}/SeparatorClosed/X_train.pt')
+		Y_train = torch.load(root+f'{args.data}/SeparatorClosed/Y_train.pt')
+
+		X_test = torch.load(root+f'{args.data}/Separator{args.regime}/X_test.pt')
+		Y_test = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test.pt')
+
+		Y_train = id_mapper(Y_train)
+		Y_test = id_mapper(Y_test)
+	    
+		separator_trainer_params['params'].pop('accuracy_metric', None)
+		separator_trainer_params['params'].pop('pn_accuracy_metric', None)
+		try:
+			separator_trainer_params['params']['accuracy_metric']
+			separator_trainer_params['params']['pn_accuracy_metric']
+			raise Exception('Accuracy metrics not properly deleted')
+		except KeyError:
+			pass
+
+		separator_dataset_train = MixtureDataset(X_train, Y_train,
+												 size=mixing_config['training_size'],
+												 n_src=mixing_config['n_src'],
+												 subset='train',
+												 shift_factor=mixing_config['shift_factor'],
+												 shift_overlaps=mixing_config['shift_overlaps'],
+												 pad=mixing_config['padding_scheme'],
+												 side=mixing_config['padding_side'])
+		separator_dataset_test = MixtureDataset(X_test, Y_test,
+												size=mixing_config['validation_size'],
+												n_src=mixing_config['n_src'],
+												subset='val',
+												shift_factor=mixing_config['shift_factor'],
+												shift_overlaps=mixing_config['shift_overlaps'],
+												pad=mixing_config['padding_scheme'],
+												side=mixing_config['padding_side'])
 
 	separator_dataloader_train = torch.utils.data.DataLoader(separator_dataset_train,
 															 batch_size=separator_learning_params['batch_size'],
