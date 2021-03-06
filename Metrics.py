@@ -42,8 +42,8 @@ def normalized_accuracy(outputs, data, index=1, classifier=None, peak_accuracy=1
 	_, pred = torch.max(outputs, dim = 1)
 	correct = (pred == y_true).sum()
 	total = y_true.size(0)
-	acc = 100 * correct.item() / total
-	acc = 1 - (F.relu(peak_accuracy - acc) / peak_accuracy)
+	acc = 100 * correct / total
+	acc = (1 - (F.relu(peak_accuracy - acc) / peak_accuracy)).item()
 	return torch.tensor(acc, dtype=torch.float64)
 
 @pit_wrapper_metric
@@ -53,3 +53,7 @@ def pit_si_sdr(y_pred, data, index):
 @pit_wrapper_metric
 def pit_accuracy(outputs, data, index, classifier=None):
 	return accuracy(outputs, data, index, classifier=classifier)
+
+@pit_wrapper_metric
+def pit_pn_accuracy(outputs, data, index, classifier=None, peak_accuracy=100):
+	return normalized_accuracy(outputs, data, index, classifier=classifier, peak_accuracy=peak_accuracy)
