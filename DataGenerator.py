@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 import os
 import sys
+import json
 import random
 from sklearn.model_selection import train_test_split
 
@@ -28,6 +29,42 @@ def str_to_bool(value):
 		return True
 	raise ValueError(f'{value} is not a valid boolean value')
 
+def generate_labeled_waveforms(animal, *args, **kwargs):
+	if animal == 'Macaque':
+		loader = LoadMacaqueData(os=kwargs['os'])
+		X, Y = loader.run(balance=kwargs['balance'])
+	elif animal == 'Dolphin':
+		loader = LoadDolphinData(os=kwargs['os'], n_individuals=kwargs['n_individuals'])
+		X, Y = loader.run()
+	elif animal == 'Bat':
+		loader = LoadBatData(os=kwargs['os'])
+		X, Y = loader.run(balance=kwargs['balance'])
+	elif animal == 'SpermWhale':
+		loader = LoadSpermWhaleData(os=kwargs['os'])
+		X, Y = loader.run(balance=kwargs['balance'])        
+	return X, Y
+
+def open_closed_split(X, Y, n_open=None, seed=42):
+	random.seed(seed)
+
+	ids = np.unique(Y).tolist()
+	if n_open is not None:
+		open_ids = random.sample(list(np.unique(Y)), n_open)
+	else:
+		open_ids = []
+	closed_ids = [id for id in ids if id not in open_ids]
+	
+	X_closed = [x for x,y in zip(X, Y) if y in closed_ids]
+	Y_closed = [y for y in Y if y in closed_ids]
+
+	if n_open is not None:
+		X_open = [x for x,y in zip(X, Y) if y in open_ids]
+		Y_open = [y for y in Y if y in open_ids]
+	else:
+		X_open, Y_open = None, None
+
+	return X_closed, Y_closed, X_open, Y_open
+
 def generate_classifier_data(X, Y, *args, **kwargs):
 	X_train, X_test, Y_train, Y_test = train_test_split(X, Y, 
 														test_size=0.2, 
@@ -39,13 +76,15 @@ def generate_classifier_data(X, Y, *args, **kwargs):
 									 augmentation_factor=aug_factor,
 									 shift_factor=kwargs['shift_factor'],
 									 pad=kwargs['padding_scheme'],
-									 side=kwargs['padding_side'])
+									 side=kwargs['padding_side'],
+									 shuffle=True)
 
 		X_test, Y_test = augmenter(X_test, Y_test,
 								   augmentation_factor=aug_factor,
 								   shift_factor=kwargs['shift_factor'],
 								   pad=kwargs['padding_scheme'],
-								   side=kwargs['padding_side'])
+								   side=kwargs['padding_side'],
+								   shuffle=True)
 
 	X_train = torch.Tensor(X_train)
 	X_test = torch.Tensor(X_test)
@@ -54,10 +93,10 @@ def generate_classifier_data(X, Y, *args, **kwargs):
 
 	return X_train, X_test, Y_train, Y_test
 
-def generate_separator_data(X, Y, *args, **kwargs):
+def generate_mixture_data(X, Y, *args, **kwargs):
 	mixer = SourceMixer(n_src=kwargs['n_src'], 
 						samples=kwargs['n_samples'], 
-						frames=X.shape[-1])
+						frames=X[0].shape[-1])
 
 	x_mix, y_mix, y_mix_id = mixer.mix(X, 
 									   Y, 
@@ -70,21 +109,36 @@ def generate_separator_data(X, Y, *args, **kwargs):
 	del X
 	del Y
 
-	train_subset, test_subset = mixer.train_test_subset(x_mix, 
-														y_mix, 
-														y_mix_id, 
-														permute=kwargs['permute'])
+	x_mix = torch.stack(x_mix, dim=0)
+	y_mix = torch.stack(y_mix, dim=0)
+	y_mix_id = torch.stack(y_mix_id, dim=0)
+	return x_mix, y_mix, y_mix_id
 
-	x_mix = None
-	y_mix = None
-	y_mix_id = None
-	del x_mix
-	del y_mix
-	del y_mix_id
+def train_val_split(X, Y, seed, *args, **kwargs):
+	X_train, X_test, Y_train, Y_test = train_test_split(X, Y, 
+														test_size=0.2, 
+														random_state=seed)
 
-	return train_subset, test_subset
+	aug_factor = kwargs['augmentation_factor']
+	if aug_factor is not None:
+		X_train, Y_train = augmenter(X_train, Y_train,
+									 augmentation_factor=aug_factor,
+									 shift_factor=kwargs['shift_factor'],
+									 pad=kwargs['padding_scheme'],
+									 side=kwargs['padding_side'],
+									 shuffle=True)
+
+		X_test, Y_test = augmenter(X_test, Y_test,
+								   augmentation_factor=aug_factor,
+								   shift_factor=kwargs['shift_factor'],
+								   pad=kwargs['padding_scheme'],
+								   side=kwargs['padding_side'],
+								   shuffle=True)
+
+	return X_train, X_test, Y_train, Y_test
 
 if __name__ == '__main__':
+	parser = argparse.ArgumentParser()
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--os', type=str,
@@ -94,85 +148,90 @@ if __name__ == '__main__':
 						help='root directory for data files, e.g. Data')
 	parser.add_argument('--animal', type=str,
 						help='specify the animal to analyze')
+	parser.add_argument('--config', type=str,
+						help='config.json file name')
 	parser.add_argument('--objective', type=str,
-						help='objective task, e.g. Classification, Separation, or Pipeline')
-	parser.add_argument('--n_src', type=int,
-						help='number of sources',
-						default=2)
-	parser.add_argument('--n_individuals', type=int,
-						help='number of individuals to include',
-						default=None)
-	parser.add_argument('--balance', type=str_to_bool,
-						help='balance the datasets',
-						default=False)
-	parser.add_argument('--n_samples', type=int,
-						help='number of samples',
-						default=10000)
-	parser.add_argument('--shift_factor', type=float,
-						help='shift frame start fraction',
-						default=0.15)
-	parser.add_argument('--augmentation_factor', type=int,
-						help='augmentation factor',
-						default=None)
-	parser.add_argument('--shift_overlaps', type=str_to_bool,
-						help='shift the overlapping calls',
-						default=True)
-	parser.add_argument('--padding_scheme',
-						help='padding scheme, e.g. zero, noise, or float',
-						default='zero')
-	parser.add_argument('--padding_side',
-						help='padding scheme side, e.g. front or back',
-						default='front')
-	parser.add_argument('--permute', type=str_to_bool,
-						help='permute the data',
-						default=True)
+						help='objective task, e.g. Classification or Separation')
+	parser.add_argument('--regime', type=str,
+						help='open or closed regime, e.g. Open or Closed')
 	parser.add_argument('--seed', type=int,
-						default = 42)
+						default=42)
 
 	args = parser.parse_args()
-    
-	random.seed(args.seed)
-	np.random.seed(args.seed)
-
+	
 	animal = args.animal
-	assert animal in ['Macaque', 'Dolphin', 'Bat', 'SpermWhale', 'Elephant']
-	root = args.data_directory
-	if root[-1] != r'/':
-		root += r'/'
-
-	if animal == 'Macaque':
-		loader = LoadMacaqueData(os=args.os)
-		X, Y = loader.run(balance=args.balance)
-	elif animal == 'Dolphin':
-		loader = LoadDolphinData(os=args.os, n_individuals=args.n_individuals)
-		X, Y = loader.run()
-	elif animal == 'Bat':
-		loader = LoadBatData(os=args.os)
-		X, Y = loader.run(balance=args.balance)
-	elif animal == 'SpermWhale':
-		loader = LoadSpermWhaleData(os=args.os)
-		X, Y = loader.run(balance=args.balance)
-	elif animal == 'Elephant':
-		loader = LoadElephantData(os=args.os)
-		X, Y = loader.run()
-
+	assert animal in ['Macaque', 'Dolphin', 'Bat', 'SpermWhale']
 	if not os.path.isdir(animal):
 		os.mkdir(animal)
 
+	with open(animal + r'/' + args.config) as f:
+		data = f.read()
+	config = json.loads(data)
+
+	global preprocessing_config
+	preprocessing_config = config['data_preprocessing']
+	general_preprocessing = preprocessing_config['general']
+	classifier_preprocessing = preprocessing_config['classifier']
+	separator_preprocessing = preprocessing_config['separator']
+		
+	root = args.data_directory
+	if root[-1] != r'/':
+		root += r'/'
 	root = animal + '/' + root
 	if not os.path.isdir(root):
 		os.mkdir(root)
+	
+	random.seed(args.seed)
+	np.random.seed(args.seed)
 
 	task = args.objective
-	assert task in ['Classification', 'Separation', 'Pipeline']
+	assert task in ['Classification', 'Separation']
+
+	regime = args.regime
+	assert regime in ['Open', 'Closed']
+
+	if not os.path.isdir(root+'Waveforms'):
+		waveforms_dir = 'Waveforms/'
+		os.mkdir(root + waveforms_dir)
+		X, Y = generate_labeled_waveforms(animal,
+										  os=args.os,
+										  balance=general_preprocessing['balance'],
+										  n_individuals=general_preprocessing['n_individuals'])
+		X_closed, Y_closed, X_open, Y_open = open_closed_split(X, Y,
+															   n_open=general_preprocessing['n_open'],
+															   seed=args.seed)
+			
+		
+		np.save(root+f'{waveforms_dir}X_closed.npy', X_closed)
+		np.save(root+f'{waveforms_dir}Y_closed.npy', Y_closed)
+		if X_open is not None:
+			np.save(root+f'{waveforms_dir}X_open.npy', X_open)
+			np.save(root+f'{waveforms_dir}Y_open.npy', Y_open)
+	else:
+		X_closed = [row for row in np.load(root+'Waveforms/X_closed.npy')]
+		Y_closed = [y for y in np.load(root+'Waveforms/Y_closed.npy')]
+		try:
+			X_open = [row for row in np.load(root+'Waveforms/X_open.npy')]
+			Y_open = [y for y in np.load(root+'Waveforms/Y_open.npy')]
+		except FileNotFoundError:
+			assert regime=='Closed', print('Open regime data cannot be found')
 
 	if task == 'Classification':
-		X_train, X_test, Y_train, Y_test = generate_classifier_data(X, Y,
-																	augmentation_factor=args.augmentation_factor,
-																	shift_factor=args.shift_factor,
-																	padding_scheme=args.padding_scheme,
-																	padding_side=args.padding_side)
+		X_open, Y_open = None, None
+		del X_open
+		del Y_open
+		
+		X_train, X_test, Y_train, Y_test = train_val_split(X_closed, Y_closed, seed=0,
+														   augmentation_factor=classifier_preprocessing['augmentation_factor'],
+														   shift_factor=classifier_preprocessing['shift_factor'],
+														   padding_scheme=classifier_preprocessing['padding_scheme'],
+														   padding_side=classifier_preprocessing['padding_side'])
 
+		X_train = torch.Tensor(X_train)
+		X_test = torch.Tensor(X_test)
+		Y_train = torch.LongTensor(Y_train)
+		Y_test = torch.LongTensor(Y_test)
+		
 		classifier_root = root + 'Classifier/'
 		if not os.path.isdir(classifier_root):
 			os.mkdir(classifier_root)
@@ -182,31 +241,125 @@ if __name__ == '__main__':
 		torch.save(X_test, classifier_root+'X_test.pt')
 		torch.save(Y_test, classifier_root+'Y_test.pt')
 
+		X_train, Y_train, X_test, Y_test = None, None, None, None
+		del X_train
+		del Y_train
+		del X_test
+		del Y_test
+
 	else:
-		train_subset, test_subset = generate_separator_data(X, Y,
-															n_src=args.n_src,
-															n_samples=args.n_samples,
-															shift_factor=args.shift_factor,
-															shift_overlaps=args.shift_overlaps,
-															padding_scheme=args.padding_scheme,
-															padding_side=args.padding_side,
-															permute=args.permute)
+		if regime == 'Closed':
 
-		X_train, Y_train, Y_train_id = train_subset
-		X_test, Y_test, Y_test_id = test_subset
+			task_directory = 'SeparatorClosed/'
+			
+			task_root = root + task_directory
+			if not os.path.isdir(task_root):
+				os.mkdir(task_root)
 
-		if task == 'Separation':
-			task_directory = 'Separator/'
-		elif task == 'Pipeline':
-			task_directory = 'Pipeline/'
-            
-		task_root = root + task_directory
-		if not os.path.isdir(task_root):
-			os.mkdir(task_root)
+			X_open, Y_open = None, None
+			del X_open
+			del Y_open
 
-		torch.save(X_train, task_root+'X_train.pt')
-		torch.save(Y_train, task_root+'Y_train.pt')
-		torch.save(Y_train_id, task_root+'Y_train_id.pt')
-		torch.save(X_test, task_root+'X_test.pt')
-		torch.save(Y_test, task_root+'Y_test.pt')
-		torch.save(Y_test_id, task_root+'Y_test_id.pt')
+			X_train, X_test, Y_train, Y_test = train_val_split(X_closed, Y_closed, seed=args.seed,
+															   augmentation_factor=None)
+
+			X_closed, Y_closed = None, None
+			del X_closed
+			del Y_closed
+
+			if separator_preprocessing['mixing_to_memory'] is not None:
+				
+				mixing_params = separator_preprocessing['mixing_to_memory']
+
+				X_train, Y_train, Y_train_id = generate_mixture_data(X_train, Y_train,
+																	 n_src=mixing_params['n_src'],
+																	 n_samples=mixing_params['training_size'],
+																	 shift_factor=mixing_params['shift_factor'],
+																	 shift_overlaps=mixing_params['shift_overlaps'],
+																	 padding_scheme=mixing_params['padding_scheme'],
+																	 padding_side=mixing_params['padding_side'])
+				torch.save(X_train, task_root + 'X_train.pt')
+				torch.save(Y_train, task_root + 'Y_train.pt')
+				torch.save(Y_train_id, task_root + 'Y_train_id.pt')
+
+				X_train, Y_train, Y_train_id = None, None, None
+				del X_train
+				del Y_train
+				del Y_train_id
+
+				X_test, Y_test, Y_test_id = generate_mixture_data(X_test, Y_test,
+																  n_src=mixing_params['n_src'],
+																  n_samples=mixing_params['validation_size'],
+																  shift_factor=mixing_params['shift_factor'],
+																  shift_overlaps=mixing_params['shift_overlaps'],
+																  padding_scheme=mixing_params['padding_scheme'],
+																  padding_side=mixing_params['padding_side'])
+
+				torch.save(X_test, task_root + 'X_test.pt')
+				torch.save(Y_test, task_root + 'Y_test.pt')
+				torch.save(Y_test_id, task_root + 'Y_test_id.pt')
+
+				X_test, Y_test, Y_test_id = None, None, None
+				del X_test
+				del Y_test
+				del Y_test_id		
+
+			else:
+				X_train = torch.Tensor(X_train)
+				X_test = torch.Tensor(X_test)
+				Y_train = torch.LongTensor(Y_train)
+				Y_test = torch.LongTensor(Y_test)
+
+				torch.save(X_train, task_root+'X_train.pt')
+				torch.save(Y_train, task_root+'Y_train.pt')
+				torch.save(X_test, task_root+'X_test.pt')
+				torch.save(Y_test, task_root+'Y_test.pt')
+
+			X_train, Y_train, X_test, Y_test = None, None, None, None
+			del X_train
+			del Y_train
+			del X_test
+			del Y_test
+			
+		elif regime == 'Open':
+			assert general_preprocessing['n_open'], print('The number of IDs to hold out must be specified in the config JSON.')
+			task_directory = 'SeparatorOpen/'
+			
+			task_root = root + task_directory
+			if not os.path.isdir(task_root):
+				os.mkdir(task_root)
+
+			X_closed, Y_closed = None, None
+			del X_closed
+			del Y_closed
+
+			if separator_preprocessing['mixing_to_memory'] is not None:
+				
+				mixing_params = separator_preprocessing['mixing_to_memory']
+
+				X_test, Y_test, Y_test_id = generate_mixture_data(X_test, Y_test,
+																  n_src=mixing_params['n_src'],
+																  n_samples=mixing_params['validation_size'],
+																  shift_factor=mixing_params['shift_factor'],
+																  shift_overlaps=mixing_params['shift_overlaps'],
+																  padding_scheme=mixing_params['padding_scheme'],
+																  padding_side=mixing_params['padding_side'])
+
+				torch.save(X_test, task_root + 'X_test.pt')
+				torch.save(Y_test, task_root + 'Y_test.pt')
+				torch.save(Y_test_id, task_root + 'Y_test_id.pt')
+
+				X_test, Y_test, Y_test_id = None, None, None
+				del X_test
+				del Y_test
+				del Y_test_id	
+			else:	
+			
+				X_test = torch.Tensor(X_open)
+				Y_test = torch.LongTensor(Y_open)
+				torch.save(X_test, task_root+'X_test.pt')
+				torch.save(Y_test, task_root+'Y_test.pt')
+
+				X_test, Y_test, Y_test_id = None, None, None
+				del X_test
+				del Y_test

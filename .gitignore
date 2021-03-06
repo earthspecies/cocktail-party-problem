@@ -1,0 +1,7 @@
+BioacousticData
+*.pt
+*.npy
+__pycache__
+--pycache__/*
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
