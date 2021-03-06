@@ -100,7 +100,7 @@ if __name__ == '__main__':
 		'sisdr':si_sdr,
 		'separator_acc':lambda x,y: accuracy(x, y, index=2, classifier=clsfr),
 		'pit_sisdr':lambda x,y:pit_si_sdr(x, y, 1),
-		'pit_separator_acc':lambda x,y: pit_accuracy(x, y, index=2, classifier=clsfr)
+		'pit_separator_acc':lambda x,y: pit_accuracy(x, y, index=2, classifier=clsfr),
 		'pit_probnorm_acc':lambda x,y: pit_probnorm_accuracy(x, y, index=2, classifier=clsfr, peak_accuracy=peak_acc)
 	}
 
