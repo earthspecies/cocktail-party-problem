@@ -17,25 +17,6 @@ from Utils import *
 from PyFire import Trainer
 from VisualizationsAndDemonstrations import *
 
-import argparse
-import json
-import os
-import glob
-
-import torch
-import torch.nn as nn
-import torch.functional as F
-import torch.optim as optim
-
-from Dataset import *
-from Layers import *
-from Models import *
-from Losses import *
-from Metrics import *
-from Utils import *
-from PyFire import Trainer
-from VisualizationsAndDemonstrations import *
-
 if __name__ == '__main__':
 	print('Running Experiment')
 	parser = argparse.ArgumentParser()
@@ -47,7 +28,13 @@ if __name__ == '__main__':
 						help='data directory')
 	parser.add_argument('-cn', '--classifier_name', type=str,
 						help='name of classifier model')
+	parser.add_argument('-cpa', '--classifier_peak_acc', type=float,
+						help='peak accuracy of the trained classifier')
+	parser.add_argument('-r', '--regime', type=str,
+						help='regime under consideration, e.g. Open or Closed',
+						default='Closed')
 	args = parser.parse_args()
+	peak_acc = args.classifier_peak_acc
 
 	root = args.animal
 	if root[-1] != r'/':
@@ -75,13 +62,13 @@ if __name__ == '__main__':
 	global separator_model_config
 	separator_model_config = config['separator_model_params']
 
-	X_train = torch.load(root+f'{args.data}/Separator/X_train.pt')
-	Y_train = torch.load(root+f'{args.data}/Separator/Y_train.pt')
-	Y_train_id = torch.load(root+f'{args.data}/Separator/Y_train_id.pt')
+	X_train = torch.load(root+f'{args.data}/Separator{args.regime}/X_train.pt')
+	Y_train = torch.load(root+f'{args.data}/Separator{args.regime}/Y_train.pt')
+	Y_train_id = torch.load(root+f'{args.data}/Separator{args.regime}/Y_train_id.pt')
 
-	X_test = torch.load(root+f'{args.data}/Separator/X_test.pt')
-	Y_test = torch.load(root+f'{args.data}/Separator/Y_test.pt')
-	Y_test_id = torch.load(root+f'{args.data}/Separator/Y_test_id.pt')
+	X_test = torch.load(root+f'{args.data}/Separator{args.regime}/X_test.pt')
+	Y_test = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test.pt')
+	Y_test_id = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test_id.pt')
 
 	nll_weights = torch.Tensor(nll_loss_weights(torch.cat([Y_train, Y_test], dim=0).numpy()))
 
@@ -119,6 +106,7 @@ if __name__ == '__main__':
 		'separator_acc':lambda x,y: accuracy(x, y, index=2, classifier=clsfr),
 		'pit_sisdr':lambda x,y:pit_si_sdr(x, y, 1),
 		'pit_separator_acc':lambda x,y: pit_accuracy(x, y, index=2, classifier=clsfr)
+		'pit_probnorm_acc':lambda x,y: pit_probnorm_accuracy(x, y, index=2, classifier=clsfr, peak_accuracy=peak_acc)
 	}
 
 	classifier_dest = classifier_trainer_params['dest']

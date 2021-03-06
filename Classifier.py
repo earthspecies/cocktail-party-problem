@@ -17,27 +17,8 @@ from Utils import *
 from PyFire import Trainer
 from VisualizationsAndDemonstrations import *
 
-import argparse
-import json
-import os
-import glob
-
-import torch
-import torch.nn as nn
-import torch.functional as F
-import torch.optim as optim
-
-from Dataset import *
-from Layers import *
-from Models import *
-from Losses import *
-from Metrics import *
-from Utils import *
-from PyFire import Trainer
-from VisualizationsAndDemonstrations import *
-
 if __name__ == '__main__':
-	print('Running Experiment')
+	
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-a', '--animal', type=str,
 						help='animal root directory')
@@ -69,6 +50,9 @@ if __name__ == '__main__':
 
 	X_test = torch.load(root+f'{args.data}/Classifier/X_test.pt')
 	Y_test = torch.load(root+f'{args.data}/Classifier/Y_test.pt')
+
+	Y_train = id_mapper(Y_train)
+	Y_test = id_mapper(Y_test)
 
 	nll_weights = torch.Tensor(nll_loss_weights(torch.cat([Y_train, Y_test], dim=0).numpy()))
 
@@ -105,7 +89,8 @@ if __name__ == '__main__':
 		'sisdr':si_sdr,
 		'separator_acc':lambda x,y: accuracy(x, y, index=2, classifier=clsfr),
 		'pit_sisdr':lambda x,y:pit_si_sdr(x, y, 1),
-		'pit_separator_acc':lambda x,y: pit_accuracy(x, y, index=2, classifier=clsfr)
+		'pit_separator_acc':lambda x,y: pit_accuracy(x, y, index=2, classifier=clsfr),
+		'pit_probnorm_acc':lambda x,y: pit_probnorm_accuracy(x, y, index=2, classifier=clsfr, peak_accuracy=None),
 	}
 
 	if not os.path.isdir(root+classifier_trainer_params['dest']):

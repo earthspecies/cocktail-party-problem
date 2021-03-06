@@ -55,5 +55,5 @@ def pit_accuracy(outputs, data, index, classifier=None):
 	return accuracy(outputs, data, index, classifier=classifier)
 
 @pit_wrapper_metric
-def pit_pn_accuracy(outputs, data, index, classifier=None, peak_accuracy=100):
+def pit_probnorm_accuracy(outputs, data, index, classifier=None, peak_accuracy=100):
 	return normalized_accuracy(outputs, data, index, classifier=classifier, peak_accuracy=peak_accuracy)
