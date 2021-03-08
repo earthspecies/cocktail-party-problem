@@ -111,9 +111,14 @@ def nll_loss_weights(Y):
 	return weights
 
 def id_mapper(y):
-	ids = np.unique(y.numpy()).tolist()
-	id_dict = {e:i for i,e in enumerate(ids)}
-    
-	for i in range(y.size(0)):
-		y[i] = id_dict[y[i].item()]
+	try:
+		ids = np.unique(y.numpy()).tolist()
+		id_dict = {e:i for i,e in enumerate(ids)}
+		for i in range(y.size(0)):
+			y[i] = id_dict[y[i].item()]
+	except AttributeError:
+		ids = np.unique(y).tolist()
+		id_dict = {e:i for i,e in enumerate(ids)}
+		for i in range(len(y)):
+			y[i] = id_dict[y[i]]
 	return y

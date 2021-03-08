@@ -11,6 +11,7 @@ import librosa
 import soundfile as sf
 import random
 import tqdm
+from Utils import id_mapper
 
 class LoadMacaqueData(object):    
 	def __init__(self, url='https://storage.googleapis.com/ml-animal-sounds-datasets/macaques_24414Hz.zip', sr=24414, os='Ubuntu', state=0):
@@ -118,7 +119,7 @@ class LoadMacaqueData(object):
 		return std_dur
 
 class LoadDolphinData(object):
-	def __init__(self, os='Ubuntu', sr=96000, n_individuals=None, frames_fx=np.max):
+	def __init__(self, os='Ubuntu', sr=96000, n_individuals=None, frames_fx=np.max, seed=42):
 		self.os = os
 		if os == 'Windows':
 			self.data_path = 'BioacousticData\\Dolphin'
@@ -127,13 +128,16 @@ class LoadDolphinData(object):
 		self.sr = sr 
 		self.n_individuals = n_individuals
 		self.frames_fx = frames_fx
-		
+		self.seed = seed
+		random.seed(seed)
+        
 	def load_wavs(self):
 		wavs = []
 		for r, d, f in os.walk(self.data_path):
 			for item in f:
 				if '.wav' in item:
 					wavs.append(os.path.join(r, item))
+		wavs.sort()
 		return wavs
 	
 	def generate_df(self):
@@ -161,19 +165,26 @@ class LoadDolphinData(object):
 		
 		if self.n_individuals is not None:
 			assert type(self.n_individuals) == int
-			idxs = df[(df['Class ID'] > self.n_individuals-1)].index 
-			df.drop(idxs , inplace=True)
+
+			id_list = df['Class ID'].unique().tolist()
+			n_total = len(id_list)
+			assert self.n_individuals < n_total
+
+			ids_to_remove = random.sample(id_list, n_total - self.n_individuals)
+			df = df[~df['Class ID'].isin(ids_to_remove)]
 		return df
 	
 	def run(self):
 		path_df = self.generate_df()
 		frames = int(self.frames_fx(path_df['Duration (s)'].values)*self.sr)
-
 		X, Y = [], []
 		for i in range(len(path_df)):
 			wav, _ = librosa.load(path_df['Wav Path'].iloc[i], sr=self.sr)
-			X.append(wav.astype('float32'))
+			wav = librosa.util.fix_length(wav, frames).astype('float32')
+			X.append(wav)
 			Y.append(path_df['Class ID'].iloc[i])
+		if self.n_individuals is not None:
+			Y = id_mapper(Y)    
 		return X, Y
 	
 	def get_ids(self, files):
@@ -250,7 +261,7 @@ class LoadBatData(object):
 		df = self.generate_df(balance=balance)
 		
 		id_dict = {e:i for i, e in enumerate(np.unique(df.Emitter.values))}
-		X, Y = []
+		X, Y = [], []
 
 		if chunk == 'random':
 			for i in tqdm.tqdm(range(len(df))):

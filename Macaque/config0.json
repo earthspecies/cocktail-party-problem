@@ -97,8 +97,8 @@
             "nfft": 1024,
             "hop": 64
         },
-        "input_mode": "stft",
-        "output_mode": "istft",
+        "input_mode": "conv1d",
+        "output_mode": "conv1d",
         "phase_channel": false
     },
     "separator_trainer_params": {
@@ -110,7 +110,7 @@
         },
         "verbose": 1,
         "device": "cuda",
-        "dest": "Separator1",
+        "dest": "Separator0",
         "params": {
             "accuracy_metric": "pit_separator_acc",
             "probnorm_acc_metric": "pit_probnorm_acc",

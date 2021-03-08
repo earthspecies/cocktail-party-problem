@@ -1,7 +1,7 @@
 {
     "data_preprocessing": {
          "general": {
-             "n_src":2,
+             "n_src":3,
              "balance":false,
              "n_individuals":null,
              "n_open":null,
@@ -15,7 +15,7 @@
         },
         "separator": {
             "mixing_to_memory": {
-                "n_src":2,
+                "n_src":3,
                 "training_size":12000,
                 "validation_size":3000,
                 "shift_factor":0.15,
@@ -26,7 +26,7 @@
         }    
     },
     "classifier_dataset_params": {
-        "n_src": 2,
+        "n_src": 3,
         "objective": "classification",
         "stft_params": null,
         "filter_params": null,
@@ -71,7 +71,7 @@
         }
     },
     "separator_dataset_params": {
-        "n_src": 2,
+        "n_src": 3,
         "objective": "separation",
         "stft_params": null,
         "filter_params": null
@@ -89,7 +89,7 @@
             1,
             23156
         ],
-        "n_src": 2,
+        "n_src": 3,
         "n_blocks": 4,
         "pool_size":2,
         "batch_norm": true,
@@ -110,7 +110,7 @@
         },
         "verbose": 1,
         "device": "cuda",
-        "dest": "Separator1",
+        "dest": "Separator11",
         "params": {
             "accuracy_metric": "pit_separator_acc",
             "probnorm_acc_metric": "pit_probnorm_acc",

@@ -54,7 +54,7 @@ if __name__ == '__main__':
 	Y_train = id_mapper(Y_train)
 	Y_test = id_mapper(Y_test)
 
-	nll_weights = torch.Tensor(nll_loss_weights(torch.cat([Y_train, Y_test], dim=0).numpy()))
+	nll_weights = torch.Tensor(nll_loss_weights(Y_train.numpy()))
 
 	nfft = classifier_model_config['stft_params']['kernel_size']
 	hop = classifier_model_config['stft_params']['stride']

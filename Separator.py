@@ -64,8 +64,9 @@ if __name__ == '__main__':
 
 	global separator_preprocessing
 	separator_preprocessing = config['data_preprocessing']['separator']
+	n_src = config['data_preprocessing']['general']['n_src']
 
-	nll_weights = torch.empty()#torch.Tensor(nll_loss_weights(torch.cat([Y_train, Y_test], dim=0).numpy()))
+	nll_weights = torch.empty(0)
 
 	nfft = classifier_model_config['stft_params']['kernel_size']
 	hop = classifier_model_config['stft_params']['stride']
@@ -112,13 +113,13 @@ if __name__ == '__main__':
 	classifier.eval()
 
 	if separator_preprocessing['mixing_to_memory'] is not None:
-		X_train = torch.load(root+f'{args.data}/Separator{args.regime}/X_train.pt')
-		Y_train = torch.load(root+f'{args.data}/Separator{args.regime}/Y_train.pt')
-		Y_train_id = torch.load(root+f'{args.data}/Separator{args.regime}/Y_train_id.pt')
+		X_train = torch.load(root+f'{args.data}/Separator{args.regime}{n_src}Speakers/X_train.pt')
+		Y_train = torch.load(root+f'{args.data}/Separator{args.regime}{n_src}Speakers/Y_train.pt')
+		Y_train_id = torch.load(root+f'{args.data}/Separator{args.regime}{n_src}Speakers/Y_train_id.pt')
 
-		X_test = torch.load(root+f'{args.data}/Separator{args.regime}/X_test.pt')
-		Y_test = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test.pt')
-		Y_test_id = torch.load(root+f'{args.data}/Separator{args.regime}/Y_test_id.pt')
+		X_test = torch.load(root+f'{args.data}/Separator{args.regime}{n_src}Speakers/X_test.pt')
+		Y_test = torch.load(root+f'{args.data}/Separator{args.regime}{n_src}Speakers/Y_test.pt')
+		Y_test_id = torch.load(root+f'{args.data}/Separator{args.regime}{n_src}Speakers/Y_test_id.pt')
 
 		Y_train_id = id_mapper(Y_train_id.view(-1)).view(Y_train_id.size())
 		Y_test_id = id_mapper(Y_test_id.view(-1)).view(Y_test_id.size())

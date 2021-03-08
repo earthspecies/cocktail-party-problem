@@ -173,7 +173,9 @@ if __name__ == '__main__':
 	general_preprocessing = preprocessing_config['general']
 	classifier_preprocessing = preprocessing_config['classifier']
 	separator_preprocessing = preprocessing_config['separator']
-		
+
+	n_src=general_preprocessing['n_src']
+
 	root = args.data_directory
 	if root[-1] != r'/':
 		root += r'/'
@@ -216,6 +218,7 @@ if __name__ == '__main__':
 		except FileNotFoundError:
 			assert regime=='Closed', print('Open regime data cannot be found')
 
+	zipfile_save = general_preprocessing['zipfile_save']            
 	if task == 'Classification':
 		X_open, Y_open = None, None
 		del X_open
@@ -236,10 +239,10 @@ if __name__ == '__main__':
 		if not os.path.isdir(classifier_root):
 			os.mkdir(classifier_root)
 
-		torch.save(X_train, classifier_root+'X_train.pt')
-		torch.save(Y_train, classifier_root+'Y_train.pt')
-		torch.save(X_test, classifier_root+'X_test.pt')
-		torch.save(Y_test, classifier_root+'Y_test.pt')
+		torch.save(X_train.clone().detach(), classifier_root+'X_train.pt', _use_new_zipfile_serialization=zipfile_save)
+		torch.save(Y_train.clone().detach(), classifier_root+'Y_train.pt', _use_new_zipfile_serialization=zipfile_save)
+		torch.save(X_test.clone().detach(), classifier_root+'X_test.pt', _use_new_zipfile_serialization=zipfile_save)
+		torch.save(Y_test.clone().detach(), classifier_root+'Y_test.pt', _use_new_zipfile_serialization=zipfile_save)
 
 		X_train, Y_train, X_test, Y_test = None, None, None, None
 		del X_train
@@ -249,12 +252,6 @@ if __name__ == '__main__':
 
 	else:
 		if regime == 'Closed':
-
-			task_directory = 'SeparatorClosed/'
-			
-			task_root = root + task_directory
-			if not os.path.isdir(task_root):
-				os.mkdir(task_root)
 
 			X_open, Y_open = None, None
 			del X_open
@@ -278,6 +275,13 @@ if __name__ == '__main__':
 																	 shift_overlaps=mixing_params['shift_overlaps'],
 																	 padding_scheme=mixing_params['padding_scheme'],
 																	 padding_side=mixing_params['padding_side'])
+                
+				task_directory = f'SeparatorClosed{n_src}Speakers/'
+
+				task_root = root + task_directory
+				if not os.path.isdir(task_root):
+					os.mkdir(task_root)
+                
 				torch.save(X_train, task_root + 'X_train.pt')
 				torch.save(Y_train, task_root + 'Y_train.pt')
 				torch.save(Y_train_id, task_root + 'Y_train_id.pt')
@@ -302,18 +306,25 @@ if __name__ == '__main__':
 				X_test, Y_test, Y_test_id = None, None, None
 				del X_test
 				del Y_test
-				del Y_test_id		
+				del Y_test_id
 
 			else:
+                
+				task_directory = f'SeparatorClosed/'
+
+				task_root = root + task_directory
+				if not os.path.isdir(task_root):
+					os.mkdir(task_root)
+                
 				X_train = torch.Tensor(X_train)
 				X_test = torch.Tensor(X_test)
 				Y_train = torch.LongTensor(Y_train)
 				Y_test = torch.LongTensor(Y_test)
 
-				torch.save(X_train, task_root+'X_train.pt')
-				torch.save(Y_train, task_root+'Y_train.pt')
-				torch.save(X_test, task_root+'X_test.pt')
-				torch.save(Y_test, task_root+'Y_test.pt')
+				torch.save(X_train.clone().detach(), task_root+'X_train.pt', _use_new_zipfile_serialization=zipfile_save)
+				torch.save(Y_train.clone().detach(), task_root+'Y_train.pt', _use_new_zipfile_serialization=zipfile_save)
+				torch.save(X_test.clone().detach(), task_root+'X_test.pt', _use_new_zipfile_serialization=zipfile_save)
+				torch.save(Y_test.clone().detach(), task_root+'Y_test.pt', _use_new_zipfile_serialization=zipfile_save)
 
 			X_train, Y_train, X_test, Y_test = None, None, None, None
 			del X_train
@@ -323,11 +334,6 @@ if __name__ == '__main__':
 			
 		elif regime == 'Open':
 			assert general_preprocessing['n_open'], print('The number of IDs to hold out must be specified in the config JSON.')
-			task_directory = 'SeparatorOpen/'
-			
-			task_root = root + task_directory
-			if not os.path.isdir(task_root):
-				os.mkdir(task_root)
 
 			X_closed, Y_closed = None, None
 			del X_closed
@@ -344,6 +350,12 @@ if __name__ == '__main__':
 																  shift_overlaps=mixing_params['shift_overlaps'],
 																  padding_scheme=mixing_params['padding_scheme'],
 																  padding_side=mixing_params['padding_side'])
+                
+				task_directory = f'SeparatorOpen{n_src}Speakers/'
+
+				task_root = root + task_directory
+				if not os.path.isdir(task_root):
+					os.mkdir(task_root)
 
 				torch.save(X_test, task_root + 'X_test.pt')
 				torch.save(Y_test, task_root + 'Y_test.pt')
@@ -352,13 +364,19 @@ if __name__ == '__main__':
 				X_test, Y_test, Y_test_id = None, None, None
 				del X_test
 				del Y_test
-				del Y_test_id	
-			else:	
-			
+				del Y_test_id
+			else:
+
+				task_directory = f'SeparatorOpen/'
+
+				task_root = root + task_directory
+				if not os.path.isdir(task_root):
+					os.mkdir(task_root)
+                    
 				X_test = torch.Tensor(X_open)
 				Y_test = torch.LongTensor(Y_open)
-				torch.save(X_test, task_root+'X_test.pt')
-				torch.save(Y_test, task_root+'Y_test.pt')
+				torch.save(X_test.clone().detach(), task_root+'X_test.pt', _use_new_zipfile_serialization=zipfile_save)
+				torch.save(Y_test.clone().detach(), task_root+'Y_test.pt', _use_new_zipfile_serialization=zipfile_save)
 
 				X_test, Y_test, Y_test_id = None, None, None
 				del X_test

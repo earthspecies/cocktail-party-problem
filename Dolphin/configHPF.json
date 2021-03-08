@@ -3,22 +3,22 @@
          "general": {
              "n_src":2,
              "balance":false,
-             "n_individuals":null,
+             "n_individuals":8,
              "n_open":null,
              "zipfile_save":true
          },
          "classifier": {
-            "augmentation_factor":2,
-            "shift_factor":0.6,
+            "augmentation_factor":16,
+            "shift_factor":0.75,
             "padding_scheme":"zero",
             "padding_side":"front"
         },
         "separator": {
             "mixing_to_memory": {
                 "n_src":2,
-                "training_size":12000,
-                "validation_size":3000,
-                "shift_factor":0.15,
+                "training_size":8000,
+                "validation_size":2000,
+                "shift_factor":0.1,
                 "shift_overlaps":true,
                 "padding_scheme":"zero",
                 "padding_side":"front"
@@ -33,15 +33,15 @@
         "shuffle": true
     },
     "classifier_learning_params": {
-        "batch_size": 32,
+        "batch_size": 8,
         "learning_rate": 0.0003,
-        "epochs": 100
+        "epochs": 50
     },
     "classifier_model_params": {
         "in_size": [
             null,
             1,
-            23156
+            241740
         ],
         "n_classes": 8,
         "n_blocks": 4,
@@ -49,14 +49,19 @@
         "input_mode": "raw",
         "stft_params": {
             "kernel_size": 1024,
-            "stride": 64
+            "stride": 256
+        },
+        "filter_params": {
+            "cutoff_freq": 4700,
+            "sample_rate": 96000,
+            "b": 0.08
         },
         "lin_dim":128,
-        "dropout":0.25
+        "dropout":0.5
     },
     "classifier_trainer_params": {
         "loss_func": {
-            "nll_loss": "nll_weighted"
+            "nll_loss": "nll"
         },
         "metric_func": {
             "accuracy": "classifier_acc"
@@ -66,7 +71,7 @@
         "dest": "Classifier",
         
         "model_saver_callback": {
-                "epoch": 30,
+                "epoch": 15,
                 "save_every": 1
         }
     },
@@ -74,10 +79,14 @@
         "n_src": 2,
         "objective": "separation",
         "stft_params": null,
-        "filter_params": null
+        "filter_params": {
+            "cutoff_freq": 4700,
+            "sample_rate": 96000,
+            "b": 0.08
+        }
     },
     "separator_learning_params": {
-        "batch_size": 16,
+        "batch_size": 8,
         "learning_rate": 0.001,
         "epochs": 100,
         "optimizer": "sgd",
@@ -87,7 +96,7 @@
         "in_size": [
             null,
             1,
-            23156
+            241740
         ],
         "n_src": 2,
         "n_blocks": 4,
@@ -95,7 +104,7 @@
         "batch_norm": true,
         "filterbank_params": {
             "nfft": 1024,
-            "hop": 64
+            "hop": 256
         },
         "input_mode": "stft",
         "output_mode": "istft",
