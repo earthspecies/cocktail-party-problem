@@ -41,7 +41,7 @@
         "in_size": [
             null,
             1,
-            241740
+            290680
         ],
         "n_classes": 8,
         "n_blocks": 4,
@@ -96,11 +96,11 @@
         "in_size": [
             null,
             1,
-            241740
+            290680
         ],
         "n_src": 2,
-        "n_blocks": 4,
-        "pool_size":2,
+        "n_blocks": 3,
+        "pool_size":6,
         "batch_norm": true,
         "filterbank_params": {
             "nfft": 1024,
@@ -119,7 +119,7 @@
         },
         "verbose": 1,
         "device": "cuda",
-        "dest": "Separator1",
+        "dest": "Separator",
         "params": {
             "accuracy_metric": "pit_separator_acc",
             "probnorm_acc_metric": "pit_probnorm_acc",

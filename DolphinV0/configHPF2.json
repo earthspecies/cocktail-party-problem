@@ -1,0 +1,138 @@
+{
+    "data_preprocessing": {
+         "general": {
+             "n_src":2,
+             "balance":false,
+             "n_individuals":8,
+             "n_open":null,
+             "zipfile_save":true
+         },
+         "classifier": {
+            "augmentation_factor":16,
+            "shift_factor":0.75,
+            "padding_scheme":"zero",
+            "padding_side":"front"
+        },
+        "separator": {
+            "mixing_to_memory": {
+                "n_src":2,
+                "training_size":8000,
+                "validation_size":2000,
+                "shift_factor":0.1,
+                "shift_overlaps":true,
+                "padding_scheme":"zero",
+                "padding_side":"front"
+            }
+        }    
+    },
+    "classifier_dataset_params": {
+        "n_src": 2,
+        "objective": "classification",
+        "stft_params": null,
+        "filter_params": null,
+        "shuffle": true
+    },
+    "classifier_learning_params": {
+        "batch_size": 8,
+        "learning_rate": 0.0003,
+        "epochs": 50
+    },
+    "classifier_model_params": {
+        "in_size": [
+            null,
+            1,
+            241740
+        ],
+        "n_classes": 8,
+        "n_blocks": 4,
+        "pool_size": 4,
+        "input_mode": "raw",
+        "stft_params": {
+            "kernel_size": 1024,
+            "stride": 256
+        },
+        "filter_params": {
+            "cutoff_freq": 4700,
+            "sample_rate": 96000,
+            "b": 0.08
+        },
+        "lin_dim":128,
+        "dropout":0.5
+    },
+    "classifier_trainer_params": {
+        "loss_func": {
+            "nll_loss": "nll"
+        },
+        "metric_func": {
+            "accuracy": "classifier_acc"
+        },
+        "verbose": 1,
+        "device": "cuda",
+        "dest": "Classifier",
+        
+        "model_saver_callback": {
+                "epoch": 15,
+                "save_every": 1
+        }
+    },
+    "separator_dataset_params": {
+        "n_src": 2,
+        "objective": "separation",
+        "stft_params": null,
+        "filter_params": {
+            "cutoff_freq": 4700,
+            "sample_rate": 96000,
+            "b": 0.08
+        }
+    },
+    "separator_learning_params": {
+        "batch_size": 8,
+        "learning_rate": 0.001,
+        "epochs": 100,
+        "optimizer": "sgd",
+        "momentum": 0.6
+    },
+    "separator_model_params": {
+        "in_size": [
+            null,
+            1,
+            241740
+        ],
+        "n_src": 2,
+        "n_blocks": 5,
+        "pool_size":2,
+        "batch_norm": true,
+        "filterbank_params": {
+            "nfft": 1024,
+            "hop": 256
+        },
+        "input_mode": "stft",
+        "output_mode": "istft",
+        "phase_channel": false
+    },
+    "separator_trainer_params": {
+        "loss_func": {
+            "pit_multi_loss": "pit_total"
+        },
+        "metric_func": {
+            "si_sdr": "pit_sisdr"
+        },
+        "verbose": 1,
+        "device": "cuda",
+        "dest": "Separator2",
+        "params": {
+            "accuracy_metric": "pit_separator_acc",
+            "probnorm_acc_metric": "pit_probnorm_acc",
+            "optimizer_switcher_callback": {
+                "optimizer": "adamw_amsgrad",
+                "learning_rate": 0.0003,
+                "epoch": 3
+            },
+            "model_saver_callback": {
+                "epoch": 35,
+                "save_every": 1
+            }
+        }
+    },
+    "eval_return_data":false
+}

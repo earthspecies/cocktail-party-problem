@@ -2,7 +2,7 @@
     "data_preprocessing": {
          "general": {
              "n_src":2,
-             "balance":true,
+             "balance":false,
              "n_individuals":null,
              "n_open":3
          },
@@ -41,7 +41,7 @@
         "in_size": [
             null,
             1,
-            200000
+            250000
         ],
         "n_classes": 12,
         "n_blocks": 4,
@@ -87,11 +87,11 @@
         "in_size": [
             null,
             1,
-            200000
+            250000
         ],
         "n_src": 2,
         "n_blocks": 3,
-        "pool_size": 4,
+        "pool_size": 5,
         "batch_norm": true,
         "filterbank_params": {
             "nfft": 2048,
@@ -110,7 +110,7 @@
         },
         "verbose": 1,
         "device": "cuda",
-        "dest": "Separator1",
+        "dest": "Separator",
         "params": {
             "accuracy_metric": "pit_separator_acc",
             "probnorm_acc_metric": "pit_probnorm_acc",

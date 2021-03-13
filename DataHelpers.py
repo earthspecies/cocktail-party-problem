@@ -119,7 +119,7 @@ class LoadMacaqueData(object):
 		return std_dur
 
 class LoadDolphinData(object):
-	def __init__(self, os='Ubuntu', sr=96000, n_individuals=None, frames_fx=np.max, seed=42):
+	def __init__(self, os='Ubuntu', sr=96000, n_individuals=None, frames_fx=np.max, seed=1234):#V0_42):
 		self.os = os
 		if os == 'Windows':
 			self.data_path = 'BioacousticData\\Dolphin'
@@ -202,7 +202,7 @@ class LoadDolphinData(object):
 		return match
 
 class LoadBatData(object):
-	def __init__(self, os='Ubuntu', sr=250000, frames=200000):
+	def __init__(self, os='Ubuntu', sr=250000, frames=250000):
 		self.os = os
 		if os=='Windows':
 			self.pattern = r'\\'
