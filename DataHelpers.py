@@ -257,7 +257,7 @@ class LoadBatData(object):
 		df = df.reset_index(drop=True)
 		return df
 	
-	def run(self, balance=True, chunk='random', start_offset_from_end=1.5):
+	def run(self, balance=False, chunk='random', start_offset_from_end=1.5):
 		df = self.generate_df(balance=balance)
 		
 		id_dict = {e:i for i, e in enumerate(np.unique(df.Emitter.values))}

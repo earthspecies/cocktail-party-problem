@@ -118,11 +118,11 @@ class MixtureDataset(torch.utils.data.Dataset):
 		self.subset = subset
 		
 		if shift_factor is not None:
-			self.overlapper = lambda s: mix_overlaps(s, 
-													 shift_factor=shift_factor, 
-													 shift_overlaps=shift_overlaps, 
-													 pad=pad, 
-													 side=side)
+			self.overlapper = lambda s: self.mix_overlaps(s, 
+														  shift_factor=shift_factor, 
+														  shift_overlaps=shift_overlaps, 
+														  pad=pad, 
+														  side=side)
 		else:
 			self.overlapper = lambda s: s
 		self.seed = seed
@@ -181,8 +181,7 @@ class MixtureDataset(torch.utils.data.Dataset):
 
 		return signal
 	
-	@staticmethod
-	def mix_overlaps(signals, shift_factor=0.1, shift_overlaps=True, pad='zero', side='front'):
+	def mix_overlaps(self, signals, shift_factor=0.1, shift_overlaps=True, pad='zero', side='front'):
 		frames = signals[0].shape[-1]
 		if shift_overlaps:
 
@@ -205,5 +204,5 @@ class MixtureDataset(torch.utils.data.Dataset):
 			signals = [torch.cat([front_zeros, s], dim=-1) for s in signals]
 			signals = [torch.cat([s, torch.zeros(frames - len(s))], dim=-1) for s in signals]
 		else:
-			signals = [signal_shifter(s, shift_factor, pad=pad, side=side) for s in signals]
+			signals = [self.signal_shifter(s, shift_factor, pad=pad, side=side) for s in signals]
 		return signals

@@ -5,3 +5,11 @@ __pycache__
 --pycache__/*
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+SeparatorCTN.py
+MacaqueCLI.ipynb
+BatCLI.ipynb
+DolphinCLI.ipynb
+Bat
+Dolphin
+Macaque
+Results.ipynb

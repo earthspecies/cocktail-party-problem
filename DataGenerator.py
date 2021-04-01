@@ -212,6 +212,7 @@ if __name__ == '__main__':
 	else:
 		X_closed = [row for row in np.load(root+'Waveforms/X_closed.npy')]
 		Y_closed = [y for y in np.load(root+'Waveforms/Y_closed.npy')]
+
 		try:
 			X_open = [row for row in np.load(root+'Waveforms/X_open.npy')]
 			Y_open = [y for y in np.load(root+'Waveforms/Y_open.npy')]

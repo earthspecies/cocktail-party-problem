@@ -60,10 +60,17 @@ class Trainer(object):
 		except KeyError:
 			self.multi_loss_weights = [1]
 		
-		#if not loss_weights:
-			#self.multi_loss_weights = [1]
-		#lse:
-			#self.multi_loss_weights = list(loss_weights)
+		try:
+			self.regularizer = kwargs['L2_regularizer_callback']
+			lambda_factor = self.regularizer['lambda']
+
+			def L2_reg(model):
+				return lambda_factor * sum(p.pow(2.0).sum() for p in model.parameters())
+
+			self.loss_func['L2_reg'] = lambda *args: L2_reg(self.model)
+			self.multi_loss_weights.append(1)
+		except KeyError:
+			pass
 		
 		assert len(self.multi_loss_weights) == len(self.loss_func), 'Unbalanced loss functions and weights'
 		

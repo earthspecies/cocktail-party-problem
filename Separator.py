@@ -145,15 +145,6 @@ if __name__ == '__main__':
 
 		Y_train = id_mapper(Y_train)
 		Y_test = id_mapper(Y_test)
-	    
-		separator_trainer_params['params'].pop('accuracy_metric', None)
-		separator_trainer_params['params'].pop('pn_accuracy_metric', None)
-		try:
-			separator_trainer_params['params']['accuracy_metric']
-			separator_trainer_params['params']['pn_accuracy_metric']
-			raise Exception('Accuracy metrics not properly deleted')
-		except KeyError:
-			pass
 
 		separator_dataset_train = MixtureDataset(X_train, Y_train,
 												 size=mixing_config['training_size'],
@@ -178,6 +169,16 @@ if __name__ == '__main__':
 	separator_dataloader_test = torch.utils.data.DataLoader(separator_dataset_test,
 															batch_size=separator_learning_params['batch_size'],
 															shuffle=False)
+    
+	if args.regime == 'Open':
+		separator_trainer_params['params'].pop('accuracy_metric', None)
+		separator_trainer_params['params'].pop('probnorm_acc_metric', None)
+		try:
+			separator_trainer_params['params']['accuracy_metric']
+			separator_trainer_params['params']['pn_accuracy_metric']
+			raise Exception('Accuracy metrics not properly deleted')
+		except KeyError:
+			pass
 
 	separator_trainer_params['loss_func'][list(separator_trainer_params['loss_func'].keys())[0]] = \
 					losses_dict[separator_trainer_params['loss_func'][list(separator_trainer_params['loss_func'].keys())[0]]]

@@ -13,6 +13,8 @@ from scipy.io import wavfile
 import ipywidgets as widgets
 import functools
 
+from Layers import HighPassFilter
+
 def ax_format(x, pos):
 	x /= 1000
 	if float(x).is_integer():
@@ -37,10 +39,23 @@ def plot_separations(X, Y, index, model, sr, domain='time-domain', dest=None, pl
 	
 	t = np.linspace(0, window/sr, window)
 	X_input = torch.unsqueeze(X[index, :, :], dim=0)
-	Ys = [Y[index, s, :].numpy() for s in range(n_src)]
-
+    
 	out = model(X_input).detach().numpy()
 	outs = [out[0, s, :] for s in range(n_src)]
+    
+	save_with_filter = ''
+	if domain=='time-domain':
+		try:
+			filter_params = kwargs['filter_params']
+			hpf = HighPassFilter(**filter_params)
+			Ys = [hpf(Y[index, s, :].view(1, -1)).squeeze().numpy() for s in range(n_src)]
+			#X_input = hpf(X_input.view(1, -1))
+			save_with_filter = '_filtered'
+		except KeyError:
+			hpf = None
+			Ys = [Y[index, s, :].numpy() for s in range(n_src)]
+	else:
+		Ys = [Y[index, s, :].numpy() for s in range(n_src)]
 
 	audios = [np.squeeze(X_input.numpy()), *Ys, *outs]
 
@@ -142,10 +157,13 @@ def plot_separations(X, Y, index, model, sr, domain='time-domain', dest=None, pl
 	if dest is not None:
 		plt.savefig(f'{dest}Results/CPP_{domain}_Index{index}.png')
 	plt.show()
-
+    
 	if dest is not None:
 		for a, l in zip(audios, labels):
-			wavfile.write(f'{dest}Results/{l}_Index{index}.wav', sr, a)
+			if (l == 'Mixture') and (domain=='time-domain') and (hpf is not None):
+				a = hpf(X_input.view(1, -1)).squeeze().numpy()
+				audios[0] = a
+			wavfile.write(f'{dest}Results/{l}_Index{index}{save_with_filter}.wav', sr, a)
 			
 	buttons_list = [widgets.Button(description=labels[i]) for i in range(n_plots)]
 	for n in range(n_plots):
