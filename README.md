@@ -1,11 +1,15 @@
 # ESRepUNet: A Modular UNet-Based Machine Learning Architecture Optimized for Bioacoustic Source Separation
 
+![title](Assets/ESRepUNet.png)
+
 ## Peter C. Bermant
 In our recent paper, we propose the Earth Species Representation UNet (ESRepUNet), a modular and lightweight convolutional neural network-based architecture optimized for bioacoustic source separation across heterogeneous non-human vocal behavior. The model is trained to separate input waveforms containing signal mixtures into source estimates using a permutation-invariant training criterion, and we implement an objective function related to perceptual quality of the reconstructed signals.
 
 We evaluate the performance of ESRepUNet using objective metrics such as the scale-invariant signal-to-distortion ratio (SI-SDR) and downstream classification accuracy in addition to qualitative metrics based on visual and aural representations of the source predictions.
 
 To our knowledge, ESRepUNet represents the first attempt at addressing end-to-end single-channel bioacoustic source separation in a permutation-invariant regime across a heterogeneous set of animal species
+
+![title](Assets/Visualizations.png)
 
 ## Setup
 1. Clone the repo
