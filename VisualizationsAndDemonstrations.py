@@ -7,11 +7,13 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from ipywidgets import Button, interact, interactive, fixed, interact_manual
-from IPython.display import display, Audio, clear_output
+from IPython.display import display, Audio, clear_output, Image
 from matplotlib.gridspec import GridSpec
 from scipy.io import wavfile
 import ipywidgets as widgets
 import functools
+import glob
+import re
 
 from Layers import HighPassFilter
 
@@ -184,3 +186,42 @@ def plot_separations(X, Y, index, model, sr, domain='time-domain', dest=None, pl
 	
 	buttons = widgets.HBox(buttons_list)
 	display(widgets.VBox([buttons, out]))
+    
+def audio_visual(animal, n_src, rep, playback_factor=1, directory='Assets'):
+	assert animal in ['Macaque', 'Dolphin', 'Bat'], print('Animal must be Macaque, Dolphin, or Bat')
+	assert rep in ['WF', 'TFR'], print('Rep must be WF or TFR')
+
+	mixture_wav = sorted(glob.glob(f'{directory}/{animal}/{n_src}SpeakerMixture.wav'))
+	source_wavs = sorted(glob.glob(f'{directory}/{animal}/{n_src}SpeakerSource*.wav'))
+	pred_wavs = sorted(glob.glob(f'{directory}/{animal}/{n_src}SpeakerPred*.wav'))
+	wavs = [*mixture_wav, *source_wavs, *pred_wavs]
+	_, sr = librosa.load(wavs[0], sr=None)
+	audios = [librosa.load(w, sr=None)[0] for w in wavs]
+    
+	plots = Image(f'{directory}/{animal}/{n_src}Speaker{rep}.png')
+    
+	labels = [re.findall('Speaker(\w+).wav', w)[0] for w in wavs]
+	labels = [re.sub('Source', 'Source ', l) for l in labels]
+	labels = [re.sub('Pred', 'Separated ', l) for l in labels]
+    
+	n_plots = 2*n_src+1
+    
+	buttons_list = [widgets.Button(description=labels[i]) for i in range(n_plots)]
+	for n in range(n_plots):
+		buttons_list[n].style.button_color = 'lightgray'
+	out = widgets.Output()
+	def on_button_clicked(_, i=0):
+		with out:
+			clear_output()
+			display(Audio(audios[i], rate=sr//playback_factor))
+			for n in range(n_plots):
+				buttons_list[n].style.button_color = 'lightgray'
+			_.style.button_color = 'pink'
+
+	button_click_fxs = [functools.partial(on_button_clicked, i=j) for j in range(1, n_plots)]
+	button_click_fxs.insert(0, on_button_clicked)
+	for k in range(n_plots):
+		buttons_list[k].on_click(button_click_fxs[k])
+
+	buttons = widgets.HBox(buttons_list)
+	display(plots, widgets.VBox([buttons, out]))
