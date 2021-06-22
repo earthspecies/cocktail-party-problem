@@ -67,3 +67,6 @@ pip install -r requirements.txt
    ```
  
 We provide an interactive Colab notebook to visualize spectrograms and listen to separated signals.
+
+## Acknowledgements
+We thank Laela Sayigh, Frants Jensen, Michelle Fournet, Andrés Babino, and James Crutchfield for reviewing the manuscript and Steve Vassallo, Stefan Thomas, Evan Sharp, Munjal Shah, Shiva Ranjaram, Meghan Railey, Alex Payne, Chris Larsen, Mike Kreiger, Nicole Brodeur, and Scott Belsky for their invaluable support.
