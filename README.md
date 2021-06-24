@@ -3,11 +3,11 @@
 ![title](Assets/ESRepUNet.png)
 
 ## Peter C. Bermant
-In our recent [paper](https://www.biorxiv.org/content/10.1101/2021.06.18.449016v1), we propose the Bioacoustic Cocktail Party Problem (BioCPPNet), a modular and lightweight convolutional neural network-based architecture optimized for bioacoustic source separation across heterogeneous non-human vocal behavior. The model is trained to separate input waveforms containing signal mixtures into source estimates using a permutation-invariant training criterion, and we implement an objective function related to perceptual quality of the reconstructed signals.
+In our recent [paper](https://www.biorxiv.org/content/10.1101/2021.06.18.449016v1), we propose the Bioacoustic Cocktail Party Problem Network (BioCPPNet), a modular and lightweight convolutional neural network-based architecture optimized for bioacoustic source separation across heterogeneous non-human vocal behavior. To our knowledge, this paper redefines the state-of-the-art in single-channel bioacoustic source separation across a diverse set of non-human animal species. Employing a custom deep neural network architecture, the BioCPPNet, we separate acoustic mixtures containing overlapping calls into predictions of the disentangled sources. We train the model using a permutation-invariant training (PIT) criterion as is common in the human speech separation literature, and we use an objective training function motivated by the perceptual audio quality of the reconstructed signals. We apply our methods to a heterogenous range of animals, including macaques, bottlenose dolphins, and Egyptian fruit bats. We assess the performance of the framework using quantitative metrics including the scale-invariant signal-to-distortion ratio (SI-SDR) and downstream identify classification accuracy. As part of this study, we also report state-of-the-art improvements in bioacoustic classification tasks, i.e. labeling the identity of the animal responsible for generating a given vocalization. For instance, our macaque classifier model achieves 99.3% accuracy across 8 individuals and maintains an accuracy of 93.7%, even after calls are mixed and separated.
 
-We evaluate the performance of BioCPPNet using objective metrics such as the scale-invariant signal-to-distortion ratio (SI-SDR) and downstream classification accuracy in addition to qualitative metrics based on visual and aural representations of the source predictions.
+We specifically design our technique to address the technical and logistical challenges of working in the bioacoustic domain, which include limited data availability, unique vocal behavior requiring computationally expensive high sampling rates, and uncertainty in representing bioacoustic signals, among others. BioCPPNet serves as a general pipeline for bioacoustic source separation that performs well across a distribution of non-human acoustic signals. 
 
-To our knowledge, BioCPPNet redefines the state-of-the-art in end-to-end single-channel bioacoustic source separation in a permutation-invariant regime across a heterogeneous set of animal species
+We believe that this study will have broad scientific interest, as it implements cutting edge machine learning techniques to open the door to accessing large quantities of previously unusable bioacoustic data containing overlapping vocalizations. This will have important implications for future research, since increased access to larger bioacoustic datasets can empower the scientific community to address a greater quantity of more complex research questions, which can facilitate the development of improved conservation and management strategies for the earth’s non-human species.
 
 ![title](Assets/Visualizations.png)
 
@@ -65,8 +65,6 @@ pip install -r requirements.txt
    ```command
 	python Evaluate.py --animal Animal --data Data --config config.json --separator_name separator_name --classifier_name classifier_name --classifier_peak_acc classifier_peak_acc --regime Open
    ```
- 
-We provide an interactive Colab notebook to visualize spectrograms and listen to separated signals.
 
 ## Acknowledgements
 We thank Laela Sayigh, Frants Jensen, Michelle Fournet, Andrés Babino, and James Crutchfield for reviewing the manuscript and Steve Vassallo, Stefan Thomas, Evan Sharp, Munjal Shah, Shiva Ranjaram, Meghan Railey, Alex Payne, Chris Larsen, Mike Kreiger, Nicole Brodeur, and Scott Belsky for their invaluable support.
