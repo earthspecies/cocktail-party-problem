@@ -60,7 +60,7 @@ pip install -r requirements.txt
 5. Train the separator model including a classifier to evaluate performance as well as the classifier's testing accuracy to account for the probabilistic nature of classifying biacoustic signals and the stochasticity of the classifier model
 
    ```command
-	python Separator.py --animal Animal --data Data --config config.json -classifier_name classifier_name --classifier_peak_acc classifier_peak_acc --regime Closed
+	python Separator.py --animal Animal --data Data --config config.json --classifier_name classifier_name --classifier_peak_acc classifier_peak_acc --regime Closed
    ```
 
 6. Evaluate the performance in the appropriate regime, for example the `Open` regime
