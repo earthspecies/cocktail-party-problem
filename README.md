@@ -1,6 +1,6 @@
 # BioCPPNet: Automatic Bioacoustic Source Separation with Deep Neural Networks
 
-![title](Assets/ESRepUNet.png)
+![title](Assets/Figure1.png)
 
 In our recent [paper](https://www.biorxiv.org/content/10.1101/2021.06.18.449016v1), we propose the Bioacoustic Cocktail Party Problem Network (BioCPPNet), a modular and lightweight convolutional neural network-based architecture optimized for bioacoustic source separation. To our knowledge, this paper redefines the state-of-the-art in single-channel bioacoustic source separation across a diverse set of non-human animal species.
 
