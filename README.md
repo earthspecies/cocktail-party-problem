@@ -2,7 +2,7 @@
 
 ![title](Assets/Figure1.png)
 
-In our recent [paper](https://www.biorxiv.org/content/10.1101/2021.06.18.449016v1), we propose the Bioacoustic Cocktail Party Problem Network (BioCPPNet), a modular and lightweight convolutional neural network-based architecture optimized for bioacoustic source separation. To our knowledge, this paper redefines the state-of-the-art in single-channel bioacoustic source separation across a diverse set of non-human animal species.
+In our recent [paper](https://www.nature.com/articles/s41598-021-02790-2), we propose the Bioacoustic Cocktail Party Problem Network (BioCPPNet), a modular and lightweight convolutional neural network-based architecture optimized for bioacoustic source separation. To our knowledge, this paper redefines the state-of-the-art in single-channel bioacoustic source separation across a diverse set of non-human animal species.
 
 Employing a custom deep neural network architecture, the BioCPPNet, we separate acoustic mixtures containing overlapping calls into predictions of the disentangled sources. We train the model using a permutation-invariant training (PIT) criterion as is common in the human speech separation literature, and we use an objective training function motivated by the perceptual audio quality of the reconstructed signals. We apply our methods to a range of animals, including macaques, bottlenose dolphins, and Egyptian fruit bats. We assess the performance of the framework using quantitative metrics including the scale-invariant signal-to-distortion ratio (SI-SDR) and downstream identify classification accuracy.
 
