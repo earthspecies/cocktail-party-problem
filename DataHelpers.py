@@ -14,7 +14,7 @@ import tqdm
 from Utils import id_mapper
 
 class LoadMacaqueData(object):    
-	def __init__(self, url='https://archive.org/download/macaque_coo_calls/macaques.zip', sr=24414, os='Ubuntu', state=0):
+	def __init__(self, url='storage.googleapis.com/ml-animal-sounds-datasets/macaques_24414Hz.zip', sr=24414, os='Ubuntu', state=0):
 		self.url = url
 		self.os = os
 		self.state = state
