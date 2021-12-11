@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 ## Pipeline
 
-1. Download the bioacoustic datasets into a directory `BioacousticData/`
+1. Download the bioacoustic datasets into a root directory `BioacousticData/', naming the downloaded dataset folder 'AnimalName/'. Note that the DataHelpers.py and DataGenerator.py scripts do not require the macaque dataset to be downloaded locally before proceeding with the following steps.
 
 2. Generate the config.json file containing the configurations for constructing datasets, building and training models, and evaluating model performance 
 
