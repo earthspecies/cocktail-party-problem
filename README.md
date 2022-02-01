@@ -70,4 +70,4 @@ pip install -r requirements.txt
    ```
 
 ## Acknowledgements
-We thank Laela Sayigh, Frants Jensen, Michelle Fournet, Andrés Babino, and James Crutchfield for reviewing the manuscript and Steve Vassallo, Stefan Thomas, Evan Sharp, Munjal Shah, Shiva Ranjaram, Meghan Railey, Alex Payne, Chris Larsen, Mike Kreiger, Nicole Brodeur, and Scott Belsky for their invaluable support.
+We thank Laela Sayigh, Frants Jensen, Michelle Fournet, Andrés Babino, Maddie Cusimano,and James Crutchfield for reviewing the manuscript and Steve Vassallo, Stefan Thomas, Evan Sharp, Munjal Shah, Shiva Ranjaram, Meghan Railey, Alex Payne, Chris Larsen, Mike Kreiger, Nicole Brodeur, and Scott Belsky for their invaluable support.
